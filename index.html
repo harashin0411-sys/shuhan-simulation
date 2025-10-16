@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>首班指名選挙シミュレーション（スマホ対応）</title>
+<title>首班指名選挙シミュレーション（スマホ対応＋タップ移動）</title>
 <style>
   body {
     font-family: sans-serif;
@@ -22,7 +22,7 @@
   }
   .candidate {
     display: flex;
-    flex-direction: column-reverse; /* 下から積み上げ */
+    flex-direction: column-reverse;
     align-items: flex-start;
     width: 23%;
     min-height: 300px;
@@ -49,7 +49,6 @@
     padding: 3px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
   }
-  /* 議席プール用バー（枠いっぱい） */
   #pool {
     display: flex;
     flex-direction: column;
@@ -70,8 +69,8 @@
     margin: 3px 0;
     padding-left: 5px;
     white-space: nowrap;
-    width: 100%; /* 枠いっぱい */
-    height: 20px; /* 高さ固定 */
+    width: 100%;
+    height: 20px;
     display: flex;
     align-items: center;
     font-size: 0.8em;
@@ -107,7 +106,6 @@
     width: 100%;
     box-sizing: border-box;
   }
-  /* スマホ対応 */
   @media (max-width: 768px) {
     .candidate, #pool {
       width: 90%;
@@ -159,7 +157,7 @@
 <div class="majority-line">過半数ライン: 233議席</div>
 <div id="result" class="result">勝者判定: 未決定</div>
 
-<!-- SortableJSの読み込み -->
+<!-- SortableJS -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
@@ -195,10 +193,14 @@ function createPoolBar(party) {
   div.dataset.seats = party.seats;
   div.dataset.name = party.name;
   div.style.backgroundColor = party.color;
+
+  // タップで移動
+  div.addEventListener('click', () => tapMove(div));
+
   return div;
 }
 
-// 候補欄用バー（横幅議席数比例＋最低幅保証、縦高さ比例）
+// 候補欄用バー
 function createPartyElement(party) {
   const div = document.createElement("div");
   div.className = "party";
@@ -207,15 +209,34 @@ function createPartyElement(party) {
   div.dataset.name = party.name;
   div.style.backgroundColor = party.color;
 
-  const maxWidth = 100; // 最大横幅(%)
-  const minWidth = 40;  // 最低横幅(%)
+  const maxWidth = 100;
+  const minWidth = 40;
   const widthPercent = Math.max((party.seats / MAJORITY) * 100, minWidth);
   div.style.width = `${Math.min(widthPercent, maxWidth)}%`;
 
-  const heightPx = Math.max((party.seats / MAJORITY) * 300, 20); // 高さ比例
+  const heightPx = Math.max((party.seats / MAJORITY) * 300, 20);
   div.style.height = `${heightPx}px`;
 
   return div;
+}
+
+// タップ移動機能
+function tapMove(bar) {
+  const dest = prompt("移動先を選んでください: A, B, その他");
+  let targetId = null;
+  if (!dest) return;
+  if (dest.toLowerCase() === 'a') targetId = 'candidateA';
+  else if (dest.toLowerCase() === 'b') targetId = 'candidateB';
+  else targetId = 'others';
+
+  const partyObj = { 
+    name: bar.dataset.name, 
+    seats: parseInt(bar.dataset.seats), 
+    color: bar.style.backgroundColor 
+  };
+  document.getElementById(targetId).appendChild(createPartyElement(partyObj));
+  bar.remove();
+  updateCounts();
 }
 
 function initPool() {
@@ -227,13 +248,12 @@ function initPool() {
 }
 initPool();
 
-// SortableJS設定（PC＆スマホ対応）
+// Sortable設定
 ['pool', 'candidateA', 'candidateB', 'others'].forEach(id => {
   new Sortable(document.getElementById(id), {
     group: 'shared',
     animation: 150,
     onAdd: function(evt) {
-      // プールから候補欄に移動した場合、バーを変換
       if (evt.to.classList.contains('candidate')) {
         const el = evt.item;
         const partyObj = { 
