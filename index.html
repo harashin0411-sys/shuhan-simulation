@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>首班指名選挙シミュレーション（横幅最低保証＋縦横比例）</title>
+<title>首班指名選挙シミュレーション（スマホ対応）</title>
 <style>
   body {
     font-family: sans-serif;
@@ -48,9 +48,6 @@
     font-size: 0.8em;
     padding: 3px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-  }
-  .party.dragging {
-    opacity: 0.5;
   }
   /* 議席プール用バー（枠いっぱい） */
   #pool {
@@ -162,6 +159,9 @@
 <div class="majority-line">過半数ライン: 233議席</div>
 <div id="result" class="result">勝者判定: 未決定</div>
 
+<!-- SortableJSの読み込み -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
 <script>
 const MAJORITY = 233;
 const oppositionMembers = [
@@ -192,7 +192,6 @@ function createPoolBar(party) {
   const div = document.createElement("div");
   div.className = "pool-bar";
   div.textContent = `${party.name} (${party.seats})`;
-  div.draggable = true;
   div.dataset.seats = party.seats;
   div.dataset.name = party.name;
   div.style.backgroundColor = party.color;
@@ -204,7 +203,6 @@ function createPartyElement(party) {
   const div = document.createElement("div");
   div.className = "party";
   div.textContent = `${party.name} (${party.seats})`;
-  div.draggable = true;
   div.dataset.seats = party.seats;
   div.dataset.name = party.name;
   div.style.backgroundColor = party.color;
@@ -229,41 +227,29 @@ function initPool() {
 }
 initPool();
 
-let draggedEl = null;
-
-document.querySelectorAll(".candidate, #pool").forEach(area => {
-  area.addEventListener("dragover", e => e.preventDefault());
-  area.addEventListener("drop", e => {
-    e.preventDefault();
-    draggedEl.classList.remove("dragging");
-    if (area.classList.contains("candidate")) {
-      const partyObj = { 
-        name: draggedEl.dataset.name, 
-        seats: parseInt(draggedEl.dataset.seats), 
-        color: draggedEl.style.backgroundColor 
-      };
-      area.appendChild(createPartyElement(partyObj));
-      draggedEl.remove();
-    } else {
-      area.appendChild(draggedEl);
+// SortableJS設定（PC＆スマホ対応）
+['pool', 'candidateA', 'candidateB', 'others'].forEach(id => {
+  new Sortable(document.getElementById(id), {
+    group: 'shared',
+    animation: 150,
+    onAdd: function(evt) {
+      // プールから候補欄に移動した場合、バーを変換
+      if (evt.to.classList.contains('candidate')) {
+        const el = evt.item;
+        const partyObj = { 
+          name: el.dataset.name, 
+          seats: parseInt(el.dataset.seats), 
+          color: el.style.backgroundColor 
+        };
+        const newBar = createPartyElement(partyObj);
+        el.replaceWith(newBar);
+      }
+      updateCounts();
+    },
+    onEnd: function(evt) {
+      updateCounts();
     }
-    updateCounts();
   });
-});
-
-document.addEventListener("dragstart", e => {
-  if (e.target.classList.contains("party") || e.target.classList.contains("pool-bar")) {
-    draggedEl = e.target;
-    e.target.classList.add("dragging");
-  }
-});
-
-document.addEventListener("dragend", e => {
-  if (e.target.classList.contains("party") || e.target.classList.contains("pool-bar")) {
-    e.target.classList.remove("dragging");
-    draggedEl = null;
-    updateCounts();
-  }
 });
 
 function updateCounts() {
