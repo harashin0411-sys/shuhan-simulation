@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>首班指名選挙シミュレーション（ラベル最小＋フォント拡大）</title>
+<title>衆議院 首班指名選挙 決選投票シミュレーション</title>
 <style>
   body {
     font-family: sans-serif;
@@ -25,17 +25,31 @@
     margin: 5px;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
     background-color: #fff;
     border: 2px solid #aaa;
     box-sizing: border-box;
   }
+  .candidate-header {
+    text-align: center;
+    background: #eef;
+    padding: 4px;
+    border-bottom: 1px solid #ccc;
+  }
+  .candidate-name {
+    font-size: 1.4em;
+    font-weight: bold;
+  }
+  .vote-count {
+    font-size: 1.4em;
+    font-weight: bold;
+    margin-top: 2px;
+  }
   .candidate {
     position: relative;
     display: flex;
-    flex-direction: column-reverse; /* 下から積み上げ */
+    flex-direction: column-reverse;
     align-items: flex-start;
-    height: 270px; /* バー積み上げゾーンを広げる */
+    height: 280px;
     padding: 5px;
     box-sizing: border-box;
     background-color: #fff;
@@ -64,17 +78,16 @@
     background-color: rgba(255,255,255,0.7);
     pointer-events: none;
   }
-  /* ラベルエリア最小化＋フォント拡大 */
   .bottom-info {
     width: 100%;
-    font-size: 1em; /* 大きくする */
+    font-size: 0.9em;
     font-weight: bold;
     text-align: left;
     background: #f9f9f9;
-    padding: 3px;
+    padding: 2px 3px;
     box-sizing: border-box;
     border-top: 1px solid #ccc;
-    min-height: 24px; /* 必要最低限の高さ */
+    min-height: 24px;
   }
   #pool {
     display: flex;
@@ -129,9 +142,6 @@
     .candidate {
       height: 200px;
     }
-    .bottom-info {
-      font-size: 1.1em;
-    }
   }
 </style>
 </head>
@@ -148,21 +158,33 @@
 
 <div class="container">
   <div id="pool">
-    <h2>議席プール</h2>
+    <h2 id="poolTitle">議席プール（残り: 0）</h2>
   </div>
   <div class="candidate-area">
+    <div class="candidate-header">
+      <div id="nameDisplayA" class="candidate-name">候補A</div>
+      <div id="voteA" class="vote-count">合計: 0票</div>
+    </div>
     <div id="candidateA" class="candidate">
       <div class="majority-marker">過半数 233</div>
     </div>
     <div id="bottomA" class="bottom-info"></div>
   </div>
   <div class="candidate-area">
+    <div class="candidate-header">
+      <div id="nameDisplayB" class="candidate-name">候補B</div>
+      <div id="voteB" class="vote-count">合計: 0票</div>
+    </div>
     <div id="candidateB" class="candidate">
       <div class="majority-marker">過半数 233</div>
     </div>
     <div id="bottomB" class="bottom-info"></div>
   </div>
   <div class="candidate-area">
+    <div class="candidate-header">
+      <div id="nameDisplayO" class="candidate-name">その他</div>
+      <div id="voteO" class="vote-count">合計: 0票</div>
+    </div>
     <div id="others" class="candidate"></div>
     <div id="bottomO" class="bottom-info"></div>
   </div>
@@ -223,7 +245,7 @@ function createPartyElement(party) {
 
 function initPool() {
   const pool = document.getElementById("pool");
-  pool.innerHTML = "<h2>議席プール</h2>";
+  pool.innerHTML = `<h2 id="poolTitle">議席プール（残り: 0）</h2>`;
   parties.forEach(p => pool.appendChild(createPoolBar(p)));
 }
 initPool();
@@ -252,20 +274,31 @@ initPool();
 function updateCounts() {
   const nameA = document.getElementById("nameA").value || "候補A";
   const nameB = document.getElementById("nameB").value || "候補B";
+
   const partiesA = Array.from(document.getElementById("candidateA").querySelectorAll(".party"));
   const partiesB = Array.from(document.getElementById("candidateB").querySelectorAll(".party"));
   const partiesO = Array.from(document.getElementById("others").querySelectorAll(".party"));
+  const poolBars = Array.from(document.getElementById("pool").querySelectorAll(".pool-bar"));
 
   const seatsA = partiesA.reduce((sum, el) => sum + parseInt(el.dataset.seats), 0);
   const seatsB = partiesB.reduce((sum, el) => sum + parseInt(el.dataset.seats), 0);
   const seatsO = partiesO.reduce((sum, el) => sum + parseInt(el.dataset.seats), 0);
+  const seatsPool = poolBars.reduce((sum, el) => sum + parseInt(el.dataset.seats), 0);
 
-  document.getElementById("bottomA").textContent = `${nameA}（合計: ${seatsA}）` + 
-    (partiesA.length ? "：" + partiesA.map(el => `${el.dataset.name} (${el.dataset.seats})`).join("、") : "");
-  document.getElementById("bottomB").textContent = `${nameB}（合計: ${seatsB}）` + 
-    (partiesB.length ? "：" + partiesB.map(el => `${el.dataset.name} (${el.dataset.seats})`).join("、") : "");
-  document.getElementById("bottomO").textContent = `その他（合計: ${seatsO}）` + 
-    (partiesO.length ? "：" + partiesO.map(el => `${el.dataset.name} (${el.dataset.seats})`).join("、") : "");
+  document.getElementById("nameDisplayA").textContent = nameA;
+  document.getElementById("nameDisplayB").textContent = nameB;
+  document.getElementById("nameDisplayO").textContent = "その他";
+
+  document.getElementById("voteA").textContent = `合計: ${seatsA}票`;
+  document.getElementById("voteB").textContent = `合計: ${seatsB}票`;
+  document.getElementById("voteO").textContent = `合計: ${seatsO}票`;
+
+  // 下部に党派一覧だけ表示
+  document.getElementById("bottomA").textContent = partiesA.length ? partiesA.map(el => `${el.dataset.name} (${el.dataset.seats})`).join("、") : "";
+  document.getElementById("bottomB").textContent = partiesB.length ? partiesB.map(el => `${el.dataset.name} (${el.dataset.seats})`).join("、") : "";
+  document.getElementById("bottomO").textContent = partiesO.length ? partiesO.map(el => `${el.dataset.name} (${el.dataset.seats})`).join("、") : "";
+
+  document.getElementById("poolTitle").textContent = `議席プール（残り: ${seatsPool}）`;
 
   let resultText = "勝者判定: 未決定";
   if (seatsA > seatsB && seatsA >= MAJORITY) resultText = `勝者判定: ${nameA} が過半数を獲得！`;
@@ -281,9 +314,15 @@ function resetSimulation() {
   document.getElementById("candidateA").innerHTML = `<div class="majority-marker">過半数 233</div>`;
   document.getElementById("candidateB").innerHTML = `<div class="majority-marker">過半数 233</div>`;
   document.getElementById("others").innerHTML = ``;
-  document.getElementById("bottomA").textContent = `候補A（合計: 0）`;
-  document.getElementById("bottomB").textContent = `候補B（合計: 0）`;
-  document.getElementById("bottomO").textContent = `その他（合計: 0）`;
+  document.getElementById("nameDisplayA").textContent = "候補A";
+  document.getElementById("nameDisplayB").textContent = "候補B";
+  document.getElementById("nameDisplayO").textContent = "その他";
+  document.getElementById("voteA").textContent = "合計: 0票";
+  document.getElementById("voteB").textContent = "合計: 0票";
+  document.getElementById("voteO").textContent = "合計: 0票";
+  document.getElementById("bottomA").textContent = "";
+  document.getElementById("bottomB").textContent = "";
+  document.getElementById("bottomO").textContent = "";
   initPool();
   updateCounts();
 }
