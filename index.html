@@ -250,11 +250,13 @@ function initPool() {
 }
 initPool();
 
+// Sortable設定：プールは並び替え不可、候補欄・その他欄は並び替え可
 ['pool','candidateA','candidateB','others'].forEach(id => {
   new Sortable(document.getElementById(id), {
     group: 'shared',
     animation: 150,
-    sort: false,
+    sort: id !== 'pool', // プールはfalse、候補欄はtrue
+    direction: 'vertical', // 上下移動のみ
     onAdd: function(evt) {
       if (evt.to.classList.contains('candidate')) {
         const el = evt.item;
@@ -293,7 +295,7 @@ function updateCounts() {
   document.getElementById("voteB").textContent = `合計: ${seatsB}票`;
   document.getElementById("voteO").textContent = `合計: ${seatsO}票`;
 
-  // 下部に党派一覧だけ表示
+  // 下部に党派一覧のみ
   document.getElementById("bottomA").textContent = partiesA.length ? partiesA.map(el => `${el.dataset.name} (${el.dataset.seats})`).join("、") : "";
   document.getElementById("bottomB").textContent = partiesB.length ? partiesB.map(el => `${el.dataset.name} (${el.dataset.seats})`).join("、") : "";
   document.getElementById("bottomO").textContent = partiesO.length ? partiesO.map(el => `${el.dataset.name} (${el.dataset.seats})`).join("、") : "";
